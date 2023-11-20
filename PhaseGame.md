@@ -4,7 +4,7 @@ Intro to phaser. Building a game using phaser for learning something new.
 
 Author: Jonathan Brooks
 
-[Pull Request](https://github.com/jonbrooks01/storeFront/pull/1)
+[Pull Request](https://github.com/jonbrooks01/phaser-game/pulls)
 
 <!-- [Server Repo](https://github.com/jonbrooks01/todoServer-) -->
 <!-- 
@@ -18,7 +18,7 @@ PORT - 5173
 
 ## Running the app
 
- npm run dev
+ <!-- npm run dev -->
 
 <!-- Endpoint: Returns Object -->
 
@@ -33,4 +33,4 @@ Unit Tests: npm run test
 
 ## UML
 
-![UML](./UML.png)
+![User Stories](./userStories.png)

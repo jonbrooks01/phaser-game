@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simple Phaser Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <style>
+      body {
+        margin: 0;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Initialize Phaser game configuration
+      const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+          default: 'arcade',
+          arcade: {
+            gravity: { y: 0 },
+            debug: false,
+          },
+        },
+        scene: {
+          preload: preload,
+          create: create,
+          update: update,
+        },
+      };
+
+      const game = new Phaser.Game(config);
+
+      let player;
+      let coins;
+      let obstacles;
+      let score = 0;
+      let scoreText;
+      let obstacleSpeed = 1;
+
+      function preload() {
+        this.load.image('sky', 'assets/sky.png');
+        this.load.image('player', 'assets/player.png');
+        // this.load.spritesheet('player', 'assets/Attack_1.png', {
+        //   frameWidth: 32,
+        //   frameHeight: 48,
+        // });
+        for (let i = 1; i <= 30; i++) {
+          this.load.image(`coin${i}`, `assets/coin/Gold_${i}.png`);
+        }
+        this.load.image('obstacle', 'assets/bomb.png');
+      }
+
+      //     function createObstacles() {
+      //     obstacles = this.physics.add.group({
+      //       key: 'obstacle',
+      //       repeat: 14, // Change the repeat value to have a total of 15 obstacles (0 indexed)
+      //     });
+
+      //     obstacles.children.iterate((child) => {
+      //       const x = Phaser.Math.Between(50, 750); // Random x-position within the screen width
+      //       const y = Phaser.Math.Between(100, 400); // Adjust the range of the y positions
+
+      //       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+      //       child.setPosition(x, y); // Set the position of the obstacle
+
+      //       child.setSize(25, 25);
+
+      //       // Set obstacle color for visibility (temporary, for debugging purposes)
+      //       child.setTint(0xff0000); // Red tint
+      //     });
+      //   }
+
+      function create() {
+        this.add.image(400, 300, 'sky');
+
+        player = this.physics.add.sprite(400, 500, 'player');
+        player.setCollideWorldBounds(true);
+        // Set the collision detection shape for the player
+        player.setSize(32, 32); // Set a rectangle size for the player (adjust as needed)
+        // player.setOffset(0, 0); // Offset for the collision shape if needed
+
+        this.physics.add.overlap(player, coins, collectCoin, null, this);
+        coins = this.physics.add.group({
+          key: 'coin',
+          repeat: 5,
+          setXY: { x: 12, y: 0, stepX: 70 },
+          setScale: { x: 0.05, y: 0.05 }, // Set the scale to make the coins smaller
+        });
+
+        obstacles = this.physics.add.group({
+          key: 'obstacle',
+          repeat: 14, // Change the repeat value to have a total of 15 obstacles (0 indexed)
+        });
+        coins.children.iterate((child, index) => {
+          const x = 100 + index * 70; // Adjust the starting x position and gap between coins
+          const y = Phaser.Math.Between(100, 400); // Adjust the range of the y positions
+
+          child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+          child.setSize(32, 32); // Set the fixed size of the coin
+          //   child.setOffset(0, 0); // Offset for the collision shape if needed
+          child.setPosition(x, y); // Set the position of the coin
+
+          // Add spinning animation for each coin
+          const coinFrames = [];
+          for (let i = 1; i <= 30; i++) {
+            coinFrames.push({ key: `coin${i}` });
+          }
+
+          this.anims.create({
+            key: `spin_${child}`,
+            frames: coinFrames,
+            frameRate: 15, // Adjust the frame rate as needed
+            repeat: -1, // Set to -1 to make the animation loop
+          });
+
+          child.anims.play(`spin_${child}`, true);
+        });
+
+        // obstacles.children.iterate((child, index) => {
+        //   const x = Phaser.Math.Between(50, 750); // Random x-position within the screen width
+        //   const y = Phaser.Math.Between(100, 400); // Adjust the range of the y positions
+
+        //   child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        //   child.setPosition(x, y); // Set the position of the obstacle
+
+        //   child.setSize(10, 10);
+
+        //   // Set obstacle color for visibility (temporary, for debugging purposes)
+        //   child.setTint(0xff0000); // Red tint
+        // createObstacles.call(this);
+
+        if (!scoreText) {
+          scoreText = this.add.text(16, 16, 'Score: 0', {
+            fontSize: '32px',
+            fill: '#000',
+          });
+        }
+
+        this.physics.add.collider(player, obstacles, hitObstacle, null, this);
+        this.physics.add.overlap(player, coins, collectCoin, null, this);
+      }
+
+      //   function updateObstacles() {
+      //     obstacles.children.iterate((child) => {
+      //       // Apply random movement to the obstacles
+      //       child.x += obstacleSpeed * Phaser.Math.Between(-1, 1); // Random X movement
+      //       child.y += obstacleSpeed * Phaser.Math.Between(-1, 1); // Random Y movement
+
+      //       // Ensure obstacles stay within the game bounds
+      //       const minX = child.displayWidth / 2;
+      //       const maxX = game.config.width - child.displayWidth / 2;
+      //       const minY = child.displayHeight / 2;
+      //       const maxY = game.config.height - child.displayHeight / 2;
+
+      //       // Check and correct obstacle positions if they go out of bounds
+      //       if (child.x < minX) {
+      //         child.x = minX;
+      //       } else if (child.x > maxX) {
+      //         child.x = maxX;
+      //       }
+
+      //       if (child.y < minY) {
+      //         child.y = minY;
+      //       } else if (child.y > maxY) {
+      //         child.y = maxY;
+      //       }
+      //     });
+      //   }
+
+      function update() {
+        const cursors = this.input.keyboard.createCursorKeys();
+
+        if (cursors.left.isDown) {
+          player.setVelocityX(-160);
+        } else if (cursors.right.isDown) {
+          player.setVelocityX(160);
+        } else {
+          player.setVelocityX(0);
+        }
+
+        if (cursors.up.isDown) {
+          player.setVelocityY(-160);
+        } else if (cursors.down.isDown) {
+          player.setVelocityY(160);
+        } else {
+          player.setVelocityY(0);
+        }
+
+        // updateObstacles.call(this);
+        // Randomly move obstacles in the update loop
+      }
+
+      function collectCoin(player, coin) {
+        coin.disableBody(true, true);
+        score += 10;
+        scoreText.setText('Score: ' + score);
+
+        if (coins.countActive(true) === 0) {
+          coins.children.iterate(function (child) {
+            const x = Phaser.Math.Between(50, 750); // Set random x-position within the screen width
+            const y = Phaser.Math.Between(50, 200); // Set random y-position within the screen height
+            child.enableBody(true, x, y, true, true);
+          });
+
+          var x =
+            player.x < 400
+              ? Phaser.Math.Between(400, 800)
+              : Phaser.Math.Between(0, 400);
+
+          var obstacle = obstacles.create(x, 16, 'obstacle');
+          obstacle.setBounce(1);
+          obstacle.setCollideWorldBounds(true);
+          obstacle.setVelocity(Phaser.Math.Between(-200, 200), 20);
+          obstacle.allowGravity = false;
+        }
+      }
+
+      function hitObstacle(player, obstacle) {
+        this.physics.pause();
+        player.setTint(0xff0000);
+        gameOverText = this.add.text(250, 250, 'Game Over', {
+          fontSize: '64px',
+          fill: '#000',
+        });
+
+        // Add a "Play Again" button or text
+        const playAgainText = this.add.text(300, 350, 'Play Again', {
+          fontSize: '32px',
+          fill: '#fff',
+          backgroundColor: '#00f', // Background color for the text (you can change this)
+          padding: {
+            x: 10,
+            y: 5,
+          },
+        });
+        playAgainText.setInteractive(); // Allow text to be interactive
+
+        // Define what happens when the "Play Again" text is clicked
+        playAgainText.on('pointerdown', () => {
+          // Restart the scene or reset necessary game elements here
+          score = 0;
+          scoreText.setText('Score: 0');
+          player.clearTint();
+          gameOverText.destroy();
+          playAgainText.destroy();
+
+          // Restart the game by reloading the current scene
+          this.scene.restart();
+        });
+      }
+    </script>
+  </body>
+</html>
